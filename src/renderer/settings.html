@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - notes.one</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+  <div class="settings-app">
+    <header class="settings-header">
+      <h1>Settings</h1>
+      <button id="closeSettings" class="close-btn" aria-label="Close settings">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </header>
+
+    <main class="settings-content">
+      <section class="settings-section">
+        <h2>Global Shortcut</h2>
+        <p class="section-description">Choose a keyboard shortcut to capture selected text from any application.</p>
+        
+        <div class="shortcut-setting">
+          <label for="shortcutSelect" class="setting-label">Capture Shortcut:</label>
+          <div class="shortcut-input-group">
+            <select id="shortcutSelect" class="shortcut-select">
+              <optgroup label="Common">
+                <option value="CommandOrControl+Shift+C">⌘/Ctrl + Shift + C</option>
+                <option value="CommandOrControl+Shift+N">⌘/Ctrl + Shift + N</option>
+                <option value="CommandOrControl+Alt+C">⌘/Ctrl + Alt + C</option>
+                <option value="CommandOrControl+Alt+N">⌘/Ctrl + Alt + N</option>
+              </optgroup>
+              <optgroup label="Function Keys">
+                <option value="F9">F9</option>
+                <option value="F10">F10</option>
+                <option value="F11">F11</option>
+                <option value="F12">F12</option>
+              </optgroup>
+              <optgroup label="Alternative">
+                <option value="Alt+N">Alt/Option + N</option>
+                <option value="Alt+C">Alt/Option + C</option>
+                <option value="CommandOrControl+F9">⌘/Ctrl + F9</option>
+                <option value="Alt+F9">Alt/Option + F9</option>
+              </optgroup>
+            </select>
+            <button id="testShortcut" class="test-btn">Test</button>
+          </div>
+          <div id="shortcutStatus" class="shortcut-status"></div>
+        </div>
+
+        <div class="setting-note">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span>Some shortcuts may conflict with other applications. Test your selection to ensure it works properly.</span>
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <h2>Appearance</h2>
+        <p class="section-description">Customize the look and feel of the application.</p>
+        <div class="theme-switcher">
+          <label for="themeSwitch">Dark Mode</label>
+          <label class="switch">
+            <input type="checkbox" id="themeSwitch">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <h2>Accessibility</h2>
+        <p class="section-description">notes.one requires accessibility permissions to capture text from other applications.</p>
+        
+        <div class="accessibility-status" id="accessibilityStatus">
+          <div class="status-item">
+            <span class="status-label">Accessibility Access:</span>
+            <span id="accessibilityIndicator" class="status-indicator">Checking...</span>
+          </div>
+        </div>
+        
+        <button id="openAccessibilitySettings" class="settings-btn">
+          Open System Settings
+        </button>
+      </section>
+
+      <section class="settings-section">
+        <h2>About</h2>
+        <div class="about-info">
+          <div class="app-info">
+            <h3>notes.one</h3>
+            <p>Lightweight background note capture for macOS</p>
+            <p class="version">Version 1.0.0</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="settings-footer">
+      <button id="saveSettings" class="save-btn">Save Changes</button>
+      <button id="cancelSettings" class="cancel-btn">Cancel</button>
+    </footer>
+  </div>
+
+  <script src="settings.js"></script>
+</body>
+</html>

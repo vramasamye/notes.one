@@ -1,0 +1,57 @@
+{
+  "name": "notes.one",
+  "version": "1.0.0",
+  "description": "Background note-taking app with global shortcut",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "build": "electron-builder",
+    "rebuild": "electron-rebuild -f -w better-sqlite3 -w robotjs",
+    "test": "jest"
+  },
+  "keywords": [
+    "notes",
+    "clipboard",
+    "electron",
+    "productivity"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "electron-rebuild": "^3.2.9",
+    "jest": "^29.7.0"
+  },
+  "build": {
+    "appId": "com.notesone.app",
+    "productName": "notes.one",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/main.js",
+      "src/database.js",
+      "src/settings.js",
+      "dist/**/*",
+      "assets/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.2.0",
+    "robotjs": "^0.6.0",
+    "active-win": "^7.8.2"
+  }
+}
