@@ -10,23 +10,13 @@ class PlatformManager {
     
     // Initialize platform-specific modules lazily
     this.robot = null;
-    this.activeWin = null;
+    this.getWindows = null;
   }
 
   async initializeModules() {
-    try {
-      if (!this.robot) {
-        this.robot = require('robotjs');
-        // Configure robotjs for better performance
-        this.robot.setDelay(10);
-      }
-      
-      if (!this.activeWin) {
-        this.activeWin = require('active-win');
-      }
-    } catch (error) {
-      console.warn('Failed to initialize cross-platform modules:', error.message);
-    }
+    // No longer using robotjs or get-windows
+    // All functionality is now handled through native OS APIs
+    console.log('Platform modules initialized for', this.platform);
   }
 
   async simulateKeyPress(key = 'c', modifiers = ['command']) {
@@ -38,23 +28,22 @@ class PlatformManager {
         const modifierStr = modifiers.includes('command') ? 'command down' : 'control down';
         execSync(`osascript -e 'tell application "System Events" to keystroke "${key}" using {${modifierStr}}'`, { timeout: 1000 });
       } else {
-        // Use robotjs for Windows/Linux
-        if (!this.robot) {
-          throw new Error('robotjs not available');
+        // Use native Windows/Linux key simulation
+        // For Windows, we can use PowerShell or Windows API
+        if (this.isWindows) {
+          const modifierStr = modifiers.includes('command') || modifiers.includes('control') ? '^' : '';
+          const shiftStr = modifiers.includes('shift') ? '+' : '';
+          const altStr = modifiers.includes('alt') ? '%' : '';
+          
+          execSync(`powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('${modifierStr}${shiftStr}${altStr}${key}')"`, { timeout: 1000 });
+        } else {
+          // For Linux, use xdotool if available
+          const modifierStr = modifiers.includes('command') || modifiers.includes('control') ? 'ctrl+' : '';
+          const shiftStr = modifiers.includes('shift') ? 'shift+' : '';
+          const altStr = modifiers.includes('alt') ? 'alt+' : '';
+          
+          execSync(`xdotool key ${modifierStr}${shiftStr}${altStr}${key}`, { timeout: 1000 });
         }
-        
-        const robotModifiers = [];
-        if (modifiers.includes('command') || modifiers.includes('control')) {
-          robotModifiers.push('control');
-        }
-        if (modifiers.includes('shift')) {
-          robotModifiers.push('shift');
-        }
-        if (modifiers.includes('alt')) {
-          robotModifiers.push('alt');
-        }
-        
-        this.robot.keyTap(key, robotModifiers);
       }
     } catch (error) {
       console.error('Failed to simulate key press:', error);
@@ -76,14 +65,30 @@ class PlatformManager {
           title: await this.getWindowTitle(appName)
         };
       } else {
-        // Use active-win for Windows/Linux
-        await this.initializeModules();
-        if (!this.activeWin) {
-          throw new Error('active-win not available');
+        // Use native Windows/Linux APIs
+        if (this.isWindows) {
+          // Use PowerShell to get active window on Windows
+          const appName = execSync(
+            `powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Form]::ActiveForm | Select-Object -ExpandProperty Text"`,
+            { encoding: 'utf8', timeout: 2000 }
+          ).trim();
+          
+          return {
+            owner: { name: appName || 'Unknown' },
+            title: ''
+          };
+        } else {
+          // Use xdotool for Linux
+          const windowInfo = execSync('xdotool getactivewindow getwindowname', { 
+            encoding: 'utf8', 
+            timeout: 2000 
+          }).trim();
+          
+          return {
+            owner: { name: windowInfo || 'Unknown' },
+            title: ''
+          };
         }
-        
-        const windowInfo = await this.activeWin();
-        return windowInfo || { owner: { name: 'Unknown' }, title: '' };
       }
     } catch (error) {
       console.error('Failed to get active window:', error);
@@ -187,8 +192,7 @@ class PlatformManager {
   async checkPlatformRequirements() {
     const requirements = {
       accessibility: false,
-      robotjs: false,
-      activeWin: false
+      platformSupport: true
     };
 
     try {
@@ -196,18 +200,24 @@ class PlatformManager {
         // Check macOS accessibility permissions
         const { systemPreferences } = require('electron');
         requirements.accessibility = systemPreferences.isTrustedAccessibilityClient(false);
-      } else {
+      } else if (this.isWindows) {
         // Windows doesn't require special accessibility permissions
         requirements.accessibility = true;
-      }
-
-      // Check if robotjs is available
-      try {
-        await this.initializeModules();
-        requirements.robotjs = !!this.robot;
-        requirements.activeWin = !!this.activeWin;
-      } catch (error) {
-        console.warn('Platform modules not available:', error.message);
+        // Check if PowerShell is available
+        try {
+          execSync('powershell -Command "Write-Host test"', { timeout: 1000 });
+        } catch (error) {
+          requirements.platformSupport = false;
+        }
+      } else {
+        // Linux - check if xdotool is available
+        requirements.accessibility = true;
+        try {
+          execSync('which xdotool', { timeout: 1000 });
+        } catch (error) {
+          requirements.platformSupport = false;
+          console.warn('xdotool not found on Linux. Install with: sudo apt-get install xdotool');
+        }
       }
 
     } catch (error) {
@@ -238,7 +248,7 @@ class PlatformManager {
 
   getTrayIcon() {
     // Return platform-appropriate tray icon path
-    const iconName = this.isWindows ? 'tray-icon.ico' : 'tray-icon.png';
+    const iconName = 'tray-icon.png';
     return `assets/${iconName}`;
   }
 }

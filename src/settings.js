@@ -7,7 +7,8 @@ class SettingsManager {
     this.settingsPath = path.join(app.getPath('userData'), 'settings.json');
     this.defaultSettings = {
       globalShortcut: 'CommandOrControl+Shift+C',
-      version: '1.0.0'
+      version: '1.0.0',
+      enableVersionHistory: false
     };
     this.currentSettings = null;
   }
@@ -70,7 +71,9 @@ class SettingsManager {
       'F12': 'F12',
       'CommandOrControl+F9': '⌘/Ctrl + F9',
       'Alt+F9': 'Alt/Option + F9',
-      'CommandOrControl+Alt+C': '⌘/Ctrl + Alt + C'
+      'CommandOrControl+Alt+C': '⌘/Ctrl + Alt + C',
+      'DoubleRightShift': 'Double Right Shift',
+      'DoubleRightAlt': 'Double Right Alt/Option'
     };
     
     return displayNames[shortcut] || shortcut;

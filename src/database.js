@@ -200,6 +200,23 @@ class NotesDatabase {
     }
   }
 
+  updateNote(id, content) {
+    if (!this.isInitialized) this.initialize();
+    
+    try {
+      const stmt = this.db.prepare('UPDATE notes SET content = ? WHERE id = ?');
+      const result = stmt.run(content, id);
+      const success = result.changes > 0;
+      
+      console.log(`Note update ${success ? 'successful' : 'failed'} for ID: ${id}`);
+      return success;
+      
+    } catch (error) {
+      console.error('Error updating note:', error);
+      return false;
+    }
+  }
+
   // Batch operations for better performance
   addNotes(notes) {
     if (!this.isInitialized) this.initialize();

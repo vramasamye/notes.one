@@ -53,6 +53,25 @@ body.dark-mode {
   color: var(--text-primary);
 }
 
+.settings-branding {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-logo {
+  height: 28px;
+  width: auto;
+  max-width: 140px;
+  object-fit: contain;
+}
+
+.settings-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
 .close-btn {
   color: var(--text-tertiary);
 }

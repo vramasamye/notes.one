@@ -21,8 +21,7 @@
                         <line x1="3" y1="18" x2="21" y2="18"></line>
                     </svg>
                 </button>
-                <div class="app-icon">♦</div>
-                <h1 class="app-title">Notes</h1>
+                <img src="../../assets/logo.svg" alt="notes.one" class="app-logo">
             </div>
             <div class="header-center">
                 <div class="search-container">
@@ -42,10 +41,11 @@
                 </div>
             </div>
             <div class="header-right">
-                <button id="settingsBtn" class="icon-btn">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <div id="shortcutCurrent" class="shortcut-pill" title="Current capture shortcut"></div>
+                <button id="settingsBtn" class="icon-btn" title="Settings" aria-label="Open settings">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <circle cx="12" cy="12" r="3"></circle>
-                        <path d="M12 1v6m0 10v6m11-7h-6m-10 0H1m11.5-8a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z"></path>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82h0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"></path>
                     </svg>
                 </button>
             </div>
@@ -70,10 +70,6 @@
                             <span class="filter-label">Last 30 Days</span>
                             <span class="filter-count" id="last30DaysCount">0</span>
                         </div>
-                        <div class="filter-item" data-filter="all">
-                            <span class="filter-label">All Notes</span>
-                            <span class="filter-count" id="allNotesCount">0</span>
-                        </div>
                     </div>
                 </div>
             </aside>
@@ -86,11 +82,14 @@
                     <!-- Notes will be dynamically inserted here -->
                 </div>
 
+        <!-- Floating date badge -->
+        <div id="dateBadge" class="date-badge" style="display:none;"></div>
+
                 <!-- Empty State -->
                 <div id="emptyState" class="empty-state" style="display: none;">
                     <div class="empty-icon">📝</div>
                     <h3>No notes yet</h3>
-                    <p>Press <kbd>⌘+Shift+C</kbd> to capture selected text from any application</p>
+                    <p>Press <kbd id="shortcutHint">⌘+Shift+C</kbd> to capture selected text from any application</p>
                 </div>
 
                 <!-- Loading State -->
@@ -100,7 +99,106 @@
                 </div>
             </main>
         </div>
+
+
     </div>
+
+    <!-- In-app Settings Overlay -->
+    <div id="settingsOverlay" class="settings-overlay" style="display: none;">
+      <div class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+        <div class="settings-panel-header">
+          <h3 id="settingsTitle">Settings</h3>
+          <button id="settingsClose" class="modal-close" aria-label="Close settings">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="settings-panel-body">
+          <section class="settings-block">
+            <h4>Global Shortcut</h4>
+            <p class="settings-desc">Choose a keyboard shortcut to capture selected text from any application.</p>
+            <div class="settings-row">
+              <label for="inShortcut" class="settings-label">Capture Shortcut</label>
+              <div class="settings-inputs">
+                <select id="inShortcut" class="settings-select">
+                  <optgroup label="Common">
+                    <option value="CommandOrControl+Shift+C">⌘/Ctrl + Shift + C</option>
+                    <option value="CommandOrControl+Shift+N">⌘/Ctrl + Shift + N</option>
+                    <option value="CommandOrControl+Alt+C">⌘/Ctrl + Alt + C</option>
+                    <option value="CommandOrControl+Alt+N">⌘/Ctrl + Alt + N</option>
+                  </optgroup>
+                  <optgroup label="Function Keys">
+                    <option value="F9">F9</option>
+                    <option value="F10">F10</option>
+                    <option value="F11">F11</option>
+                    <option value="F12">F12</option>
+                  </optgroup>
+                  <optgroup label="Alternative">
+                    <option value="Alt+N">Alt/Option + N</option>
+                    <option value="Alt+C">Alt/Option + C</option>
+                    <option value="CommandOrControl+F9">⌘/Ctrl + F9</option>
+                    <option value="Alt+F9">Alt/Option + F9</option>
+                  </optgroup>
+                  <optgroup label="Double Key Press">
+                    <option value="DoubleRightShift">Double Right Shift</option>
+                    <option value="DoubleRightAlt">Double Right Alt/Option</option>
+                  </optgroup>
+                </select>
+                <button id="inTestShortcut" class="btn-primary">Test</button>
+              </div>
+              <div id="inShortcutStatus" class="settings-status" aria-live="polite"></div>
+            </div>
+          </section>
+
+          <section class="settings-block">
+            <h4>Appearance</h4>
+            <div class="settings-row">
+              <label for="inTheme" class="settings-label">Dark Mode</label>
+              <label class="switch">
+                <input type="checkbox" id="inTheme" />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </section>
+
+          <section class="settings-block">
+            <h4>Features</h4>
+            <div class="settings-row">
+              <label for="inVersionHistory" class="settings-label">Enable Version History</label>
+              <label class="switch">
+                <input type="checkbox" id="inVersionHistory" />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </section>
+
+          <section class="settings-block">
+            <h4>Accessibility</h4>
+            <div class="settings-row">
+              <span class="settings-label">Accessibility Access</span>
+              <span id="inAccessStatus" class="status-indicator checking">Checking...</span>
+            </div>
+            <button id="inOpenAccess" class="btn-secondary">Open System Settings</button>
+          </section>
+        </div>
+
+        <div class="settings-panel-footer">
+          <button id="inCancel" class="btn-secondary">Cancel</button>
+          <button id="inSave" class="btn-primary" disabled>No Changes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Twitter Badge -->
+    <a class="app-twitter-badge" href="https://x.com/e_viki_" target="_blank" rel="noopener noreferrer" title="Follow on X/Twitter">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M18.244 2H21.5l-7.5 8.574L23.5 22h-7.31l-5.71-6.668L3.63 22H.37l8.03-9.188L.5 2h7.31l5.18 6.047L18.244 2Zm-1.282 18h2.02L7.12 4h-2.02l11.862 16Z"/>
+      </svg>
+      <span>@e_viki_</span>
+    </a>
 
     <script src="renderer.js"></script>
 </body>

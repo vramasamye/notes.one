@@ -12,7 +12,11 @@
 <body>
   <div class="settings-app">
     <header class="settings-header">
-      <h1>Settings</h1>
+      <div class="settings-branding">
+        <img src="../../assets/app-logo.png" alt="notes.one" class="settings-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+        <h1 style="display: none;">Settings</h1>
+        <span class="settings-title">Settings</span>
+      </div>
       <button id="closeSettings" class="close-btn" aria-label="Close settings">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -47,6 +51,10 @@
                 <option value="Alt+C">Alt/Option + C</option>
                 <option value="CommandOrControl+F9">⌘/Ctrl + F9</option>
                 <option value="Alt+F9">Alt/Option + F9</option>
+              </optgroup>
+              <optgroup label="Double Key Press">
+                <option value="DoubleRightShift">Double Right Shift</option>
+                <option value="DoubleRightAlt">Double Right Alt/Option</option>
               </optgroup>
             </select>
             <button id="testShortcut" class="test-btn">Test</button>
