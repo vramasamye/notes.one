@@ -447,6 +447,15 @@ class NotesApp {
     ipcMain.handle('open-accessibility-settings', () => {
       shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility');
     });
+    
+    // Asset path handler for logo resolution
+    ipcMain.handle('get-assets-path', () => {
+      if (app.isPackaged) {
+        return path.join(process.resourcesPath, 'assets');
+      } else {
+        return path.join(__dirname, '../assets');
+      }
+    });
 
     // Window management
     ipcMain.on('close-settings', () => {

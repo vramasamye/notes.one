@@ -1,6 +1,6 @@
 {
   "name": "notes.one",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Background note-taking app with global shortcut",
   "main": "src/main.js",
   "scripts": {
@@ -33,7 +33,10 @@
   "homepage": "https://github.com/yourusername/notes.one",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/notes.one.git"
+    "url": "https://github.com/vramasamye/notes.one.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vramasamye/notes.one/issues"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
@@ -50,11 +53,16 @@
       "output": "dist",
       "buildResources": "build"
     },
-    "publish": {
-      "provider": "github",
-      "releaseType": "release",
-      "publishAutoUpdate": true
-    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "vramasamye",
+        "repo": "notes.one",
+        "releaseType": "release",
+        "publishAutoUpdate": true,
+        "private": false
+      }
+    ],
     "files": [
       "src/**/*",
       "assets/**/*",
@@ -93,7 +101,7 @@
       "type": "distribution",
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
-      "hardenedRuntime": true,
+      "hardenedRuntime": false,
       "gatekeeperAssess": false,
       "notarize": false,
       "extendInfo": {

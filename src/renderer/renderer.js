@@ -9,13 +9,30 @@ class NotesRenderer {
     this.isLoading = false;
     this.customTitles = {};
     
-    this.initializeElements();
+    this.initialize();
+  }
+  
+  async initialize() {
+    await this.initializeElements();
     this.attachEventListeners();
     this.loadNotes();
     this.updateFilterCounts();
   }
 
-  initializeElements() {
+  async initializeElements() {
+    // Fix logo path for packaged app
+    const logoImg = document.querySelector('.app-logo');
+    if (logoImg) {
+      try {
+        const assetsPath = await ipcRenderer.invoke('get-assets-path');
+        logoImg.src = `file://${assetsPath}/logo.svg`;
+      } catch (error) {
+        console.error('Failed to get assets path, falling back to relative path:', error);
+        // Fallback to relative path
+        logoImg.src = '../assets/logo.svg';
+      }
+    }
+    
     // Header elements
     this.searchInput = document.getElementById('searchInput');
     this.clearSearchBtn = document.getElementById('clearSearch');
