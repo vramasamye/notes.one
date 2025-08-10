@@ -54,9 +54,17 @@ class NotesDatabase {
           source TEXT,
           url TEXT,
           timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          is_sensitive BOOLEAN DEFAULT FALSE
         )
       `);
+      
+      // Add is_sensitive column if it doesn't exist (for existing databases)
+      try {
+        this.db.exec('ALTER TABLE notes ADD COLUMN is_sensitive BOOLEAN DEFAULT FALSE');
+      } catch (error) {
+        // Column already exists, which is fine
+      }
       
       // Create optimized indexes
       this.db.exec('CREATE INDEX IF NOT EXISTS idx_notes_timestamp ON notes(timestamp DESC)');
@@ -103,7 +111,7 @@ class NotesDatabase {
     
     try {
       const stmt = this.db.prepare(`
-        SELECT id, content, source, url, timestamp, created_at
+        SELECT id, content, source, url, timestamp, created_at, is_sensitive
         FROM notes
         ORDER BY timestamp DESC
         LIMIT ? OFFSET ?
@@ -127,7 +135,7 @@ class NotesDatabase {
       // Use optimized search with the composite index
       const searchPattern = `%${query}%`;
       const stmt = this.db.prepare(`
-        SELECT id, content, source, url, timestamp, created_at
+        SELECT id, content, source, url, timestamp, created_at, is_sensitive
         FROM notes
         WHERE content LIKE ? OR source LIKE ?
         ORDER BY timestamp DESC
@@ -214,6 +222,35 @@ class NotesDatabase {
     } catch (error) {
       console.error('Error updating note:', error);
       return false;
+    }
+  }
+
+  toggleSensitiveNote(id) {
+    if (!this.isInitialized) this.initialize();
+    
+    try {
+      // First get the current sensitive status
+      const getStmt = this.db.prepare('SELECT is_sensitive FROM notes WHERE id = ?');
+      const note = getStmt.get(id);
+      
+      if (!note) {
+        console.log(`Note with ID ${id} not found`);
+        return false;
+      }
+      
+      // Toggle the sensitive status (convert boolean to integer for SQLite)
+      const newSensitiveStatus = !note.is_sensitive;
+      const newSensitiveStatusInt = newSensitiveStatus ? 1 : 0;
+      const stmt = this.db.prepare('UPDATE notes SET is_sensitive = ? WHERE id = ?');
+      const result = stmt.run(newSensitiveStatusInt, id);
+      const success = result.changes > 0;
+      
+      console.log(`Note sensitivity ${success ? 'updated' : 'failed'} for ID: ${id}. New status: ${newSensitiveStatus}`);
+      return success ? newSensitiveStatus : null;
+      
+    } catch (error) {
+      console.error('Error toggling note sensitivity:', error);
+      return null;
     }
   }
 

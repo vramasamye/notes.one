@@ -160,9 +160,17 @@ class EncryptedNotesDatabase {
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           version INTEGER DEFAULT 1,
-          is_deleted BOOLEAN DEFAULT FALSE
+          is_deleted BOOLEAN DEFAULT FALSE,
+          is_sensitive BOOLEAN DEFAULT FALSE
         )
       `);
+      
+      // Add is_sensitive column if it doesn't exist (for existing databases)
+      try {
+        this.db.exec('ALTER TABLE notes ADD COLUMN is_sensitive BOOLEAN DEFAULT FALSE');
+      } catch (error) {
+        // Column already exists, which is fine
+      }
       
       // Create note versions table for history
       this.db.exec(`
@@ -328,6 +336,37 @@ class EncryptedNotesDatabase {
     }
   }
 
+  toggleSensitiveNote(noteId) {
+    if (!this.isInitialized) {
+      throw new Error('Database not initialized');
+    }
+    
+    try {
+      // First get the current sensitive status
+      const getStmt = this.db.prepare('SELECT is_sensitive FROM notes WHERE id = ? AND is_deleted = FALSE');
+      const note = getStmt.get(noteId);
+      
+      if (!note) {
+        console.log(`Note with ID ${noteId} not found`);
+        return null;
+      }
+      
+      // Toggle the sensitive status (convert boolean to integer for SQLite)
+      const newSensitiveStatus = !note.is_sensitive;
+      const newSensitiveStatusInt = newSensitiveStatus ? 1 : 0;
+      const stmt = this.db.prepare('UPDATE notes SET is_sensitive = ? WHERE id = ?');
+      const result = stmt.run(newSensitiveStatusInt, noteId);
+      const success = result.changes > 0;
+      
+      console.log(`Note sensitivity ${success ? 'updated' : 'failed'} for ID: ${noteId}. New status: ${newSensitiveStatus}`);
+      return success ? newSensitiveStatus : null;
+      
+    } catch (error) {
+      console.error('Error toggling note sensitivity:', error);
+      return null;
+    }
+  }
+
   getNotes(limit = 50, offset = 0) {
     if (!this.isInitialized) {
       throw new Error('Database not initialized');
@@ -335,7 +374,7 @@ class EncryptedNotesDatabase {
     
     try {
       const stmt = this.db.prepare(`
-        SELECT id, content, source, url, timestamp, created_at, updated_at, version
+        SELECT id, content, source, url, timestamp, created_at, updated_at, version, is_deleted, is_sensitive
         FROM notes
         WHERE is_deleted = FALSE
         ORDER BY timestamp DESC
@@ -344,16 +383,21 @@ class EncryptedNotesDatabase {
       
       const notes = stmt.all(limit, offset);
       
-      // Decrypt notes
-      const decryptedNotes = notes.map(note => ({
-        ...note,
-        content: this.decrypt(note.content),
-        source: this.decrypt(note.source),
-        url: this.decrypt(note.url)
-      }));
+      // Decrypt content if encryption is enabled
+      if (this.isEncryptionEnabled) {
+        const decryptedNotes = notes.map(note => ({
+          ...note,
+          content: this.decrypt(note.content),
+          source: this.decrypt(note.source || ''),
+          url: this.decrypt(note.url || '')
+        }));
+        
+        console.log(`Retrieved ${decryptedNotes.length} notes`);
+        return decryptedNotes || [];
+      }
       
-      console.log(`Retrieved ${decryptedNotes.length} notes`);
-      return decryptedNotes || [];
+      console.log(`Retrieved ${notes.length} notes`);
+      return notes || [];
       
     } catch (error) {
       console.error('Error getting notes:', error);
@@ -383,7 +427,7 @@ class EncryptedNotesDatabase {
         // For unencrypted databases, use SQL search
         const searchPattern = `%${query}%`;
         const stmt = this.db.prepare(`
-          SELECT id, content, source, url, timestamp, created_at, updated_at, version
+          SELECT id, content, source, url, timestamp, created_at, updated_at, version, is_sensitive
           FROM notes
           WHERE (content LIKE ? OR source LIKE ?) AND is_deleted = FALSE
           ORDER BY timestamp DESC

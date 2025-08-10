@@ -348,6 +348,14 @@ class NotesApp {
       return false;
     });
 
+    ipcMain.handle('database-toggle-sensitive-note', async (event, noteId) => {
+      const db = this.useEncryption ? this.encryptedDb : this.db;
+      if (db.toggleSensitiveNote) {
+        return await db.toggleSensitiveNote(noteId);
+      }
+      return null;
+    });
+
     // Encryption handlers
     ipcMain.handle('encryption-setup', async (event, password) => {
       try {

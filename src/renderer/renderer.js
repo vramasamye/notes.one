@@ -2,12 +2,13 @@ const { ipcRenderer } = require('electron');
 
 class NotesRenderer {
   constructor() {
-    this.currentFilter = 'today';
+    this.currentFilter = 'all';
     this.currentSearch = '';
     this.allNotes = [];
     this.filteredNotes = [];
     this.isLoading = false;
     this.customTitles = {};
+    this.globalHideSensitive = true; // Default to hiding sensitive notes
     
     this.initialize();
   }
@@ -38,25 +39,38 @@ class NotesRenderer {
     this.clearSearchBtn = document.getElementById('clearSearch');
     this.settingsBtn = document.getElementById('settingsBtn');
     this.sidebarToggle = document.getElementById('sidebarToggle');
+    this.globalHideBtn = document.getElementById('globalHideBtn');
+    this.shortcutHint = document.getElementById('shortcutHint');
+    this.shortcutCurrent = document.getElementById('shortcutCurrent');
+    
+    // Main content elements
+    this.notesList = document.getElementById('notesList');
+    this.loadingState = document.getElementById('loadingState');
+    this.emptyState = document.getElementById('emptyState');
+    this.dateBadge = document.getElementById('dateBadge');
     
     // Sidebar elements
     this.sidebar = document.querySelector('.sidebar');
-    this.sidebar.classList.add('collapsed');
     this.filterItems = document.querySelectorAll('.filter-item');
     this.allNotesCount = document.getElementById('allNotesCount');
     this.last7DaysCount = document.getElementById('last7DaysCount');
     this.last30DaysCount = document.getElementById('last30DaysCount');
     
-    // Content elements
+    // Update global hide button state
+    if (this.globalHideBtn) {
+      const svgElement = this.globalHideBtn.querySelector('svg');
+      if (svgElement && this.globalHideSensitive) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', '1');
+        line.setAttribute('y1', '1');
+        line.setAttribute('x2', '23');
+        line.setAttribute('y2', '23');
+        svgElement.appendChild(line);
+        this.globalHideBtn.title = 'Show all sensitive notes';
+      }
+    }
     
-    this.notesList = document.getElementById('notesList');
-    this.emptyState = document.getElementById('emptyState');
-    this.loadingState = document.getElementById('loadingState');
-    this.dateBadge = document.getElementById('dateBadge');
-    this.shortcutHint = document.getElementById('shortcutHint');
-    this.shortcutCurrent = document.getElementById('shortcutCurrent');
-
-    // In-app settings elements
+    // Settings panel elements
     this.settingsOverlay = document.getElementById('settingsOverlay');
     this.settingsClose = document.getElementById('settingsClose');
     this.inShortcut = document.getElementById('inShortcut');
@@ -90,6 +104,11 @@ class NotesRenderer {
         this.setActiveFilter(filter);
       });
     });
+    
+    // Global hide/show button
+    if (this.globalHideBtn) {
+      this.globalHideBtn.addEventListener('click', () => this.toggleAllSensitiveNotes());
+    }
     
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
@@ -399,17 +418,28 @@ class NotesRenderer {
     
     const customTitle = this.customTitles[String(note.id)];
     const displayTitle = customTitle || this.createNoteTitle(note.content);
-    const isLong = note.content.length > 300;
-    const truncatedContent = isLong ? note.content.substring(0, 300) + '...' : note.content;
-    const displayContent = this.highlightSearch(truncatedContent);
+    
+    // Handle sensitive notes (convert integer to boolean)
+    const isSensitive = !!note.is_sensitive;
+    
+    // Handle sensitive notes
+    let displayContent;
+    if (isSensitive && this.globalHideSensitive) {
+      // Show redacted content for sensitive notes when global hide is enabled
+      displayContent = '<span class="redacted-content">********</span>';
+    } else {
+      const isLong = note.content.length > 300;
+      const truncatedContent = isLong ? note.content.substring(0, 300) + '...' : note.content;
+      displayContent = this.highlightSearch(truncatedContent);
+    }
 
     const enableHistory = (this.currentSettings && this.currentSettings.enableVersionHistory);
     noteElement.innerHTML = `
       <div class="note-header">
         <div class="note-title">${this.escapeHtml(displayTitle)}</div>
       </div>
-      <div class="note-content${isLong ? ' truncated' : ''}">${displayContent}</div>
-      ${isLong ? '<button class="expand-btn" data-expanded="false">Show more</button>' : ''}
+      <div class="note-content${isSensitive && this.globalHideSensitive ? ' sensitive' : ''}${!isSensitive && note.content.length > 300 ? ' truncated' : ''}">${displayContent}</div>
+      ${!isSensitive && note.content.length > 300 ? '<button class="expand-btn" data-expanded="false">Show more</button>' : ''}
       <div class="note-footer">
         <div class="note-meta">
           ${note.url ? `<a href="${this.escapeHtml(note.url)}" target="_blank" class="note-url" rel="noopener noreferrer" title="${this.escapeHtml(note.url)}">${this.escapeHtml(this.shortenUrl(note.url))}</a>` : ''}
@@ -418,6 +448,13 @@ class NotesRenderer {
         </div>
       </div>
       <div class="note-actions">
+        <button class="note-action-btn toggle-sensitive" title="${isSensitive ? 'Show note' : 'Hide note'}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+            ${isSensitive ? '<line x1="1" y1="1" x2="23" y2="23"></line>' : ''}
+          </svg>
+        </button>
         <button class="note-action-btn edit" title="Edit note">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -447,11 +484,17 @@ class NotesRenderer {
     `;
 
     // Attach event listeners
+    const toggleSensitiveBtn = noteElement.querySelector('.toggle-sensitive');
     const editBtn = noteElement.querySelector('.edit');
     const historyBtn = noteElement.querySelector('.history');
     const copyBtn = noteElement.querySelector('.copy');
     const deleteBtn = noteElement.querySelector('.delete');
     const expandBtn = noteElement.querySelector('.expand-btn');
+
+    toggleSensitiveBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.toggleSensitiveNote(note.id);
+    });
 
     editBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -467,7 +510,17 @@ class NotesRenderer {
 
     copyBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.copyToClipboard(note.content, copyBtn);
+      // For sensitive notes, we might want to confirm before copying
+      if (isSensitive) {
+        this.showConfirmDialog('Copy Sensitive Note', 'This note is marked as sensitive. Are you sure you want to copy its content?')
+          .then(confirmed => {
+            if (confirmed) {
+              this.copyToClipboard(note.content, copyBtn);
+            }
+          });
+      } else {
+        this.copyToClipboard(note.content, copyBtn);
+      }
     });
 
     deleteBtn.addEventListener('click', (e) => {
@@ -588,6 +641,105 @@ class NotesRenderer {
     this.searchInput.focus();
   }
 
+  async toggleAllSensitiveNotes() {
+    // Toggle the global state
+    this.globalHideSensitive = !this.globalHideSensitive;
+    
+    // Update the button icon and title
+    if (this.globalHideBtn) {
+      const svgElement = this.globalHideBtn.querySelector('svg');
+      if (svgElement) {
+        // Clear the SVG
+        svgElement.innerHTML = '';
+        
+        // Create the base eye icon
+        const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path1.setAttribute('d', 'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z');
+        svgElement.appendChild(path1);
+        
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', '12');
+        circle.setAttribute('cy', '12');
+        circle.setAttribute('r', '3');
+        svgElement.appendChild(circle);
+        
+        // Add the line if hiding (sensitive notes are hidden)
+        if (this.globalHideSensitive) {
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          line.setAttribute('x1', '1');
+          line.setAttribute('y1', '1');
+          line.setAttribute('x2', '23');
+          line.setAttribute('y2', '23');
+          svgElement.appendChild(line);
+          this.globalHideBtn.title = 'Show all sensitive notes';
+        } else {
+          this.globalHideBtn.title = 'Hide all sensitive notes';
+        }
+      }
+    }
+    
+    // Smoothly update all notes instead of re-rendering
+    this.updateAllSensitiveNotesDisplay();
+  }
+
+  updateAllSensitiveNotesDisplay() {
+    // Update all sensitive notes in the DOM with smooth transitions
+    const sensitiveNotes = document.querySelectorAll('.note-item');
+    
+    sensitiveNotes.forEach(noteElement => {
+      const noteId = parseInt(noteElement.dataset.noteId);
+      const note = this.filteredNotes.find(n => n.id === noteId);
+      
+      if (note && note.is_sensitive) {
+        const contentElement = noteElement.querySelector('.note-content');
+        const toggleButton = noteElement.querySelector('.toggle-sensitive');
+        
+        if (contentElement && toggleButton) {
+          if (this.globalHideSensitive) {
+            // Hide sensitive content
+            contentElement.innerHTML = '<span class="redacted-content">********</span>';
+            contentElement.classList.add('sensitive');
+            // Remove expand button with fade out
+            const expandBtn = noteElement.querySelector('.expand-btn');
+            if (expandBtn) {
+              expandBtn.style.opacity = '0';
+              setTimeout(() => {
+                if (expandBtn.parentNode) {
+                  expandBtn.parentNode.removeChild(expandBtn);
+                }
+              }, 200);
+            }
+          } else {
+            // Show sensitive content
+            const isLong = note.content.length > 300;
+            const truncatedContent = isLong ? note.content.substring(0, 300) + '...' : note.content;
+            contentElement.innerHTML = this.highlightSearch(truncatedContent);
+            contentElement.classList.remove('sensitive');
+            // Add expand button if needed
+            if (isLong && !noteElement.querySelector('.expand-btn')) {
+              const expandBtn = document.createElement('button');
+              expandBtn.className = 'expand-btn';
+              expandBtn.setAttribute('data-expanded', 'false');
+              expandBtn.textContent = 'Show more';
+              expandBtn.style.opacity = '0';
+              contentElement.parentNode.insertBefore(expandBtn, contentElement.nextSibling);
+              // Fade in
+              setTimeout(() => {
+                expandBtn.style.opacity = '1';
+              }, 10);
+              
+              // Attach event listener
+              expandBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleNoteExpansion(noteElement, note, expandBtn);
+              });
+            }
+          }
+        }
+      }
+    });
+  }
+
   async deleteNote(noteId) {
     // Custom confirm dialog to avoid Electron default icon
     const confirmed = await this.showConfirmDialog('Delete Note', 'Are you sure you want to delete this note?');
@@ -605,11 +757,9 @@ class NotesRenderer {
         this.allNotes = this.allNotes.filter(note => note.id !== noteId);
         this.filteredNotes = this.filteredNotes.filter(note => note.id !== noteId);
         
-        // Update UI
+        // Update UI - re-render notes to properly update date groupings
         setTimeout(() => {
-          if (noteElement) {
-            noteElement.remove();
-          }
+          this.renderNotes();
           this.updateFilterCounts();
           if (this.filteredNotes.length === 0) {
             this.showEmptyState();
@@ -627,6 +777,107 @@ class NotesRenderer {
         noteElement.classList.remove('deleting');
       }
       alert('Failed to delete note');
+    }
+  }
+
+  async toggleSensitiveNote(noteId) {
+    try {
+      const newSensitiveStatus = await ipcRenderer.invoke('database-toggle-sensitive-note', noteId);
+      if (newSensitiveStatus !== null) {
+        // Update local arrays (convert boolean to integer for consistency with database)
+        const newSensitiveStatusInt = newSensitiveStatus ? 1 : 0;
+        this.allNotes = this.allNotes.map(note => 
+          note.id === noteId ? { ...note, is_sensitive: newSensitiveStatusInt } : note
+        );
+        this.filteredNotes = this.filteredNotes.map(note => 
+          note.id === noteId ? { ...note, is_sensitive: newSensitiveStatusInt } : note
+        );
+        
+        // Update only the specific note element instead of re-rendering everything
+        const noteElement = document.querySelector(`[data-note-id="${noteId}"]`);
+        if (noteElement) {
+          // Find the note in our arrays
+          const note = this.filteredNotes.find(n => n.id === noteId);
+          if (note) {
+            // Update the sensitive status display
+            const contentElement = noteElement.querySelector('.note-content');
+            const toggleButton = noteElement.querySelector('.toggle-sensitive');
+            
+            if (contentElement && toggleButton) {
+              // Update the button title and icon
+              toggleButton.title = newSensitiveStatus ? 'Show note' : 'Hide note';
+              
+              // Update the SVG icon
+              const svgElement = toggleButton.querySelector('svg');
+              if (svgElement) {
+                if (newSensitiveStatus) {
+                  // Add the line for sensitive notes
+                  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                  line.setAttribute('x1', '1');
+                  line.setAttribute('y1', '1');
+                  line.setAttribute('x2', '23');
+                  line.setAttribute('y2', '23');
+                  svgElement.appendChild(line);
+                } else {
+                  // Remove the line for non-sensitive notes
+                  const line = svgElement.querySelector('line');
+                  if (line) {
+                    svgElement.removeChild(line);
+                  }
+                }
+              }
+              
+              // Update the content display with smooth transitions
+              if (newSensitiveStatus) {
+                // Show redacted content
+                contentElement.innerHTML = '<span class="redacted-content">********</span>';
+                contentElement.classList.add('sensitive');
+                // Remove expand button if it exists
+                const expandBtn = noteElement.querySelector('.expand-btn');
+                if (expandBtn) {
+                  expandBtn.style.opacity = '0';
+                  setTimeout(() => {
+                    if (expandBtn.parentNode) {
+                      expandBtn.parentNode.removeChild(expandBtn);
+                    }
+                  }, 200);
+                }
+              } else {
+                // Show actual content
+                const isLong = note.content.length > 300;
+                const truncatedContent = isLong ? note.content.substring(0, 300) + '...' : note.content;
+                contentElement.innerHTML = this.highlightSearch(truncatedContent);
+                contentElement.classList.remove('sensitive');
+                // Add expand button if needed and it doesn't exist
+                if (isLong && !noteElement.querySelector('.expand-btn')) {
+                  const expandBtn = document.createElement('button');
+                  expandBtn.className = 'expand-btn';
+                  expandBtn.setAttribute('data-expanded', 'false');
+                  expandBtn.textContent = 'Show more';
+                  expandBtn.style.opacity = '0';
+                  // Insert the button after the content element
+                  contentElement.parentNode.insertBefore(expandBtn, contentElement.nextSibling);
+                  // Fade in
+                  setTimeout(() => {
+                    expandBtn.style.opacity = '1';
+                  }, 10);
+                  
+                  // Attach event listener
+                  expandBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.toggleNoteExpansion(noteElement, note, expandBtn);
+                  });
+                }
+              }
+            }
+          }
+        }
+      } else {
+        alert('Failed to toggle note sensitivity');
+      }
+    } catch (error) {
+      console.error('Error toggling note sensitivity:', error);
+      alert('Failed to toggle note sensitivity');
     }
   }
 

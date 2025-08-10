@@ -445,6 +445,8 @@ body {
   margin-bottom: 8px;
   white-space: pre-wrap;
   word-wrap: break-word;
+  transition: all 0.2s ease;
+  min-height: 24px;
 }
 
 .note-content.truncated {
@@ -586,7 +588,8 @@ body {
   font-size: 12px;
   padding: 4px 0;
   margin-top: 8px;
-  transition: color 0.2s ease;
+  transition: all 0.2s ease, opacity 0.2s ease;
+  opacity: 1;
 }
 
 .expand-btn:hover {
@@ -1369,8 +1372,23 @@ textarea:focus {
   }
 }
 
-/* Note item styles */
-.note-item {
-  position: relative;
-  /* ... existing note-item styles ... */
+.note-content.sensitive {
+  font-family: 'SF Mono', 'Roboto Mono', monospace;
+  letter-spacing: 0.2em;
+  font-size: 14px;
+  text-align: left;
+  padding: 4px 0;
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+  transition: all 0.2s ease;
+}
+
+.redacted-content {
+  color: var(--text-secondary);
+  font-weight: bold;
+  letter-spacing: 0.3em;
+  margin: 0;
+  padding: 0;
+  transition: all 0.2s ease;
 }

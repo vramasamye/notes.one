@@ -41,6 +41,13 @@
                 </div>
             </div>
             <div class="header-right">
+                <button id="globalHideBtn" class="icon-btn" title="Hide all sensitive notes">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
+                </button>
                 <div id="shortcutCurrent" class="shortcut-pill" title="Current capture shortcut"></div>
                 <button id="settingsBtn" class="icon-btn" title="Settings" aria-label="Open settings">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -54,11 +61,11 @@
         <!-- Main Content -->
         <div class="main-container">
             <!-- Sidebar -->
-            <aside class="sidebar">
+            <aside class="sidebar collapsed">
                 <div class="sidebar-section">
                     <h2 class="sidebar-title">Saved Notes</h2>
                     <div class="filter-list">
-                        <div class="filter-item" data-filter="all">
+                        <div class="filter-item active" data-filter="all">
                             <span class="filter-label">All Notes</span>
                             <span class="filter-count" id="allNotesCount">0</span>
                         </div>
